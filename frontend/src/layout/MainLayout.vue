@@ -30,6 +30,7 @@ const menus = computed(() => {
   ]
   if (authStore.isAdmin) {
     base.push({ label: '后台审核', path: '/app/admin', icon: Setting })
+    base.push({ label: '用户管理', path: '/app/admin/users', icon: User })
   }
   return base
 })

@@ -7,6 +7,8 @@ export const authApi = {
 
 export const userApi = {
   profile: () => http.get('/user/profile'),
+  list: () => http.get('/user/list'),
+  delete: (id) => http.delete(`/user/${id}`),
 }
 
 export const knowledgeApi = {

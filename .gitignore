@@ -1,3 +1,6 @@
+# Office documents
+*.docx
+
 # Python
 __pycache__/
 *.py[cod]
