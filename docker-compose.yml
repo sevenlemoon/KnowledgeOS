@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: knowledge-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ltygxz712
+      MYSQL_DATABASE: bysj
+      MYSQL_CHARSET: utf8mb4
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: knowledge-backend
+    environment:
+      DATABASE_URL: mysql+pymysql://root:ltygxz712@mysql:3306/bysj?charset=utf8mb4
+      SECRET_KEY: your-production-secret-key-change-this
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:alpine
+    container_name: knowledge-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
