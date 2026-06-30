@@ -142,9 +142,9 @@ onMounted(loadData)
 }
 .ranking-row:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
 
-.rank-gold { background: linear-gradient(135deg, #fef3c7, #fff7ed); border-color: #fde68a; }
-.rank-silver { background: linear-gradient(135deg, #f1f5f9, #f8fafc); border-color: #cbd5e1; }
-.rank-bronze { background: linear-gradient(135deg, #fef3c7, #fffbeb); border-color: #fde68a; }
+.rank-gold { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border-color: rgba(245,158,11,0.3); }
+.rank-silver { background: linear-gradient(135deg, rgba(148,163,184,0.12), rgba(203,213,225,0.06)); border-color: rgba(148,163,184,0.3); }
+.rank-bronze { background: linear-gradient(135deg, rgba(217,119,6,0.12), rgba(245,158,11,0.06)); border-color: rgba(217,119,6,0.3); }
 
 .row-rank { width: 40px; text-align: center; }
 .rank-icon-text { font-size: 24px; }

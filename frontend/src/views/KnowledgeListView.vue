@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import {
@@ -10,6 +10,7 @@ import {
 import { knowledgeApi, externalApi } from '../api/modules'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 const list = ref([])
@@ -109,26 +110,9 @@ const doAction = async (id, action) => {
   } catch {}
 }
 
-// 详情
-const detailVisible = ref(false)
-const detail = ref(null)
-const commentText = ref('')
-const openDetail = async (id) => {
-  try {
-    detail.value = await knowledgeApi.detail(id)
-    detailVisible.value = true
-    loadList()
-  } catch {}
-}
-const submitComment = async () => {
-  if (!commentText.value.trim()) return
-  try {
-    await knowledgeApi.comment({ knowledge_id: detail.value.id, content: commentText.value })
-    ElMessage.success('评论成功')
-    commentText.value = ''
-    openDetail(detail.value.id)
-    loadList()
-  } catch {}
+// 详情 - 跳转到详情页
+const openDetail = (id) => {
+  router.push(`/app/knowledge/${id}`)
 }
 
 // 外部链接跳转
@@ -279,61 +263,29 @@ onMounted(() => {
         <el-pagination v-model:current-page="externalPage" :page-size="12" :total="externalTotal" layout="prev, pager, next" @current-change="loadExternal" />
       </div>
     </template>
-
-    <!-- ========== 详情抽屉 ========== -->
-    <el-drawer v-model="detailVisible" :title="detail?.title" size="50%" direction="rtl">
-      <template v-if="detail">
-        <div class="detail-meta">
-          <el-tag>{{ detail.category }}</el-tag>
-          <span class="meta-author">{{ detail.author_name }}</span>
-          <span class="meta-time">{{ detail.create_time }}</span>
-        </div>
-        <div class="detail-content" v-html="detail.content?.replace(/\n/g, '<br/>')" />
-        <div class="detail-stats">
-          <div class="detail-stat" @click="doAction(detail.id, 'view')"><el-icon><View /></el-icon> 浏览 {{ detail.view_count }}</div>
-          <div class="detail-stat" @click="doAction(detail.id, 'download')"><el-icon><Download /></el-icon> 下载 {{ detail.download_count }}</div>
-          <div class="detail-stat" :class="{ 'stat-active': detail.user_liked }" @click="doAction(detail.id, 'like')"><el-icon><Star /></el-icon> {{ detail.user_liked ? '已点赞' : '点赞' }} {{ detail.like_count }}</div>
-          <div class="detail-stat" :class="{ 'stat-active': detail.user_adopted }" @click="doAction(detail.id, 'adopt')"><el-icon><CollectionTag /></el-icon> {{ detail.user_adopted ? '已采纳' : '采纳' }} {{ detail.adopt_count }}</div>
-        </div>
-        <div class="comment-section">
-          <h4>评论 ({{ detail.comments?.length || 0 }})</h4>
-          <div class="comment-input">
-            <el-input v-model="commentText" type="textarea" :rows="2" placeholder="发表评论..." />
-            <el-button type="primary" size="small" style="margin-top: 8px" @click="submitComment">提交评论</el-button>
-          </div>
-          <div v-for="c in detail.comments" :key="c.id" class="comment-item">
-            <el-avatar :size="32" class="comment-avatar">{{ c.author_name?.charAt(0) }}</el-avatar>
-            <div class="comment-body">
-              <div class="comment-header"><strong>{{ c.author_name }}</strong><span>{{ c.create_time }}</span></div>
-              <p>{{ c.content }}</p>
-            </div>
-          </div>
-        </div>
-      </template>
-    </el-drawer>
   </div>
 </template>
 
 <style scoped>
 .knowledge-page { display: flex; flex-direction: column; gap: 20px; }
 .page-header-section { margin-bottom: 4px; }
-.page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
-.page-desc { font-size: 13px; color: #64748b; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px; }
+.page-desc { font-size: 13px; color: var(--color-text-secondary); }
 
 /* ---- Tab Switcher ---- */
-.tab-switcher { display: flex; gap: 4px; background: rgba(0,0,0,0.04); border-radius: 12px; padding: 4px; width: fit-content; }
+.tab-switcher { display: flex; gap: 4px; background: var(--color-bg-hover); border-radius: 12px; padding: 4px; width: fit-content; }
 .tab-btn {
   padding: 8px 20px; border-radius: 10px; border: none; cursor: pointer;
-  font-size: 14px; font-weight: 500; color: #64748b; background: transparent;
+  font-size: 14px; font-weight: 500; color: var(--color-text-secondary); background: transparent;
   transition: all 0.2s;
 }
-.tab-btn.active { background: #fff; color: #6366f1; box-shadow: 0 1px 4px rgba(0,0,0,0.08); font-weight: 600; }
+.tab-btn.active { background: var(--color-bg-card); color: var(--color-primary); box-shadow: var(--shadow-sm); font-weight: 600; }
 
 /* ---- Filter Bar ---- */
 .filter-bar { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; }
-.search-box { display: flex; align-items: center; gap: 8px; background: #f1f5f9; border-radius: 10px; padding: 8px 14px; }
-.search-icon { color: #94a3b8; }
-.search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: #1e293b; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--color-bg-hover); border-radius: 10px; padding: 8px 14px; }
+.search-icon { color: var(--color-text-placeholder); }
+.search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--color-text-primary); }
 .category-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ---- Internal Knowledge Grid ---- */
@@ -341,30 +293,30 @@ onMounted(() => {
 .knowledge-card {
   padding: 20px; cursor: pointer; transition: all 0.25s ease; position: relative;
 }
-.knowledge-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+.knowledge-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.card-category { font-size: 11px; color: #6366f1; background: rgba(99,102,241,0.08); padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+.card-category { font-size: 11px; color: var(--color-primary); background: var(--color-primary-bg); padding: 3px 10px; border-radius: 6px; font-weight: 600; }
 .quality-badge {
   font-size: 11px; color: #f59e0b; background: rgba(245,158,11,0.1); padding: 3px 8px; border-radius: 6px; font-weight: 700;
 }
-.card-title { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px; line-height: 1.4; }
-.card-summary { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-title { font-size: 15px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px; line-height: 1.4; }
+.card-summary { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
-.tag-pill { font-size: 11px; color: #6366f1; background: rgba(99,102,241,0.06); padding: 2px 8px; border-radius: 4px; }
+.tag-pill { font-size: 11px; color: var(--color-primary); background: var(--color-primary-bg); padding: 2px 8px; border-radius: 4px; }
 .card-footer { display: flex; justify-content: space-between; align-items: center; }
 .card-actions { display: flex; align-items: center; gap: 8px; }
 .card-stats { display: flex; gap: 12px; }
-.stat-item { display: flex; align-items: center; gap: 3px; font-size: 12px; color: #94a3b8; }
-.card-author { font-size: 12px; color: #64748b; font-weight: 500; }
+.stat-item { display: flex; align-items: center; gap: 3px; font-size: 12px; color: var(--color-text-placeholder); }
+.card-author { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; }
 
 /* ---- External Knowledge ---- */
 .external-filter { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; }
 .source-switcher { display: flex; gap: 8px; }
 .source-btn {
-  padding: 6px 16px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer;
-  font-size: 13px; color: #64748b; background: #fff; transition: all 0.2s;
+  padding: 6px 16px; border-radius: 8px; border: 1px solid var(--color-border); cursor: pointer;
+  font-size: 13px; color: var(--color-text-secondary); background: var(--color-bg-card); transition: all 0.2s;
 }
-.source-btn.active { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,0.04); font-weight: 600; }
+.source-btn.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-bg); font-weight: 600; }
 .tag-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .external-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -372,12 +324,12 @@ onMounted(() => {
   padding: 0; overflow: hidden; cursor: pointer; transition: all 0.25s ease;
   display: flex; flex-direction: column;
 }
-.external-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+.external-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); }
 
-.external-cover { position: relative; height: 180px; overflow: hidden; background: #f1f5f9; }
+.external-cover { position: relative; height: 180px; overflow: hidden; background: var(--color-bg-hover); }
 .external-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
 .external-card:hover .external-cover img { transform: scale(1.05); }
-.cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f1f5f9, #e2e8f0); }
+.cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--color-bg-hover); }
 .source-badge {
   position: absolute; top: 10px; right: 10px;
   padding: 3px 10px; border-radius: 6px;
@@ -392,49 +344,25 @@ onMounted(() => {
 }
 
 .external-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
-.external-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.external-summary { font-size: 12px; color: #64748b; line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.external-title { font-size: 14px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.external-summary { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .external-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
 .external-tag { font-size: 10px; }
 .external-meta { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 .meta-left { display: flex; align-items: center; gap: 6px; }
 .author-avatar { width: 22px; height: 22px; border-radius: 50%; }
-.author-name { font-size: 12px; color: #475569; font-weight: 500; }
-.meta-right { display: flex; gap: 10px; font-size: 11px; color: #94a3b8; }
+.author-name { font-size: 12px; color: var(--color-text-regular); font-weight: 500; }
+.meta-right { display: flex; gap: 10px; font-size: 11px; color: var(--color-text-placeholder); }
 .meta-right span { display: flex; align-items: center; gap: 2px; }
 
 .external-link-hint {
-  padding: 8px 16px; border-top: 1px solid rgba(0,0,0,0.04);
-  font-size: 12px; color: #6366f1; display: flex; align-items: center; gap: 4px;
+  padding: 8px 16px; border-top: 1px solid var(--color-border-light);
+  font-size: 12px; color: var(--color-primary); display: flex; align-items: center; gap: 4px;
   transition: background 0.2s;
 }
-.external-card:hover .external-link-hint { background: rgba(99,102,241,0.04); }
+.external-card:hover .external-link-hint { background: var(--color-primary-bg); }
 
 /* ---- Pagination ---- */
 .pagination-wrapper { display: flex; justify-content: center; padding: 16px 0; }
 
-/* ---- Detail Drawer ---- */
-.detail-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.meta-author { font-size: 13px; color: #475569; font-weight: 500; }
-.meta-time { font-size: 12px; color: #94a3b8; }
-.detail-content { font-size: 14px; color: #334155; line-height: 1.8; margin-bottom: 24px; }
-.detail-stats { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-.detail-stat {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 10px;
-  font-size: 13px; color: #475569; background: #f8fafc;
-  border: 1px solid #e2e8f0; cursor: pointer;
-  transition: all 0.2s;
-}
-.detail-stat:hover { background: rgba(99,102,241,0.06); color: #6366f1; border-color: rgba(99,102,241,0.2); }
-.stat-active { background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)) !important; color: #6366f1 !important; border-color: rgba(99,102,241,0.3) !important; }
-.comment-section h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
-.comment-input { margin-bottom: 16px; }
-.comment-item { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-.comment-avatar { background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #fff; font-size: 13px; flex-shrink: 0; }
-.comment-body { flex: 1; }
-.comment-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-.comment-header strong { color: #1e293b; }
-.comment-header span { color: #94a3b8; font-size: 12px; }
-.comment-body p { font-size: 13px; color: #475569; line-height: 1.6; }
 </style>

@@ -24,6 +24,7 @@ const routes = [
     children: [
       { path: 'dashboard', component: () => import('../views/DashboardView.vue') },
       { path: 'knowledge', component: () => import('../views/KnowledgeListView.vue') },
+      { path: 'knowledge/:id', component: () => import('../views/KnowledgeDetailView.vue') },
       { path: 'publish', component: () => import('../views/PublishView.vue') },
       { path: 'ranking', component: () => import('../views/RankingView.vue') },
       { path: 'profile', component: () => import('../views/ProfileView.vue') },

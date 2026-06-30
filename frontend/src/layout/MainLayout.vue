@@ -1,22 +1,66 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Odometer, Collection, EditPen, Trophy, User, Setting,
   Fold, Expand, Bell, SwitchButton, Search,
+  Moon, Sunny, ArrowUp,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
+import { ElMessage } from 'element-plus'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
 const searchKeyword = ref('')
+const searchFocused = ref(false)
+const isDark = ref(false)
+const showBackTop = ref(false)
+
+// 暗黑模式切换
+const toggleTheme = () => {
+  isDark.value = !isDark.value
+  const theme = isDark.value ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', theme)
+  localStorage.setItem('theme', theme)
+}
+
+// 初始化主题 + 事件监听
+onMounted(() => {
+  const theme = localStorage.getItem('theme') || 'light'
+  isDark.value = theme === 'dark'
+  document.documentElement.setAttribute('data-theme', theme)
+  window.addEventListener('scroll', handleScroll)
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('keydown', handleKeydown)
+})
+
+const handleScroll = () => {
+  showBackTop.value = window.scrollY > 300
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const handleSearch = () => {
   if (searchKeyword.value.trim()) {
     router.push({ path: '/app/knowledge', query: { keyword: searchKeyword.value.trim() } })
     searchKeyword.value = ''
+    searchFocused.value = false
+  }
+}
+
+// 快捷键 Cmd/Ctrl + K 聚焦搜索
+const handleKeydown = (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    document.querySelector('.search-input')?.focus()
   }
 }
 
@@ -41,6 +85,7 @@ const sidebarWidth = computed(() => collapsed.value ? '68px' : '240px')
 const handleLogout = () => {
   authStore.logout()
   router.push('/login')
+  ElMessage.success('已退出登录')
 }
 </script>
 
@@ -86,23 +131,36 @@ const handleLogout = () => {
       <!-- 顶部导航 -->
       <el-header class="layout-header">
         <div class="header-left">
-          <div class="header-search" @click="$refs.searchInput?.focus()">
+          <div class="header-search" :class="{ focused: searchFocused }">
             <el-icon class="search-icon"><Search /></el-icon>
             <input
-              ref="searchInput"
               v-model="searchKeyword"
               class="search-input"
-              placeholder="搜索知识..."
+              placeholder="搜索知识、文档、标签..."
               @keyup.enter="handleSearch"
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
             />
-            <kbd class="search-kbd">Enter</kbd>
+            <kbd class="search-kbd">{{ navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl' }} K</kbd>
           </div>
         </div>
         <div class="header-right">
+          <!-- 暗黑模式切换 -->
+          <button class="theme-toggle" @click="toggleTheme" :title="isDark ? '切换亮色模式' : '切换暗黑模式'">
+            <transition name="theme-icon" mode="out-in">
+              <el-icon v-if="isDark" :size="18"><Sunny /></el-icon>
+              <el-icon v-else :size="18"><Moon /></el-icon>
+            </transition>
+          </button>
+
+          <!-- 通知 -->
           <el-badge :value="0" :hidden="true" class="header-badge">
-            <el-button :icon="Bell" circle size="small" text />
+            <el-button :icon="Bell" circle size="small" text class="header-icon-btn" />
           </el-badge>
+
           <el-divider direction="vertical" style="height: 20px; margin: 0 4px;" />
+
+          <!-- 用户下拉 -->
           <el-dropdown trigger="click">
             <div class="header-user">
               <el-avatar :size="34" class="user-avatar">
@@ -136,6 +194,13 @@ const handleLogout = () => {
         </router-view>
       </el-main>
     </el-container>
+
+    <!-- 返回顶部 -->
+    <transition name="fade">
+      <button v-if="showBackTop" class="back-to-top" @click="scrollToTop">
+        <el-icon :size="20"><ArrowUp /></el-icon>
+      </button>
+    </transition>
   </el-container>
 </template>
 
@@ -235,25 +300,31 @@ const handleLogout = () => {
   padding: 0 var(--space-xl);
   height: var(--header-height);
   position: sticky; top: 0; z-index: 90;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .header-search {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 16px;
-  background: rgba(241, 245, 249, 0.8);
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px solid transparent;
   border-radius: 12px;
   cursor: pointer;
   transition: all var(--transition-normal);
   min-width: 280px;
 }
-.header-search:hover { background: rgba(241, 245, 249, 1); }
+.header-search:hover { background: rgba(241, 245, 249, 0.9); }
+.header-search.focused {
+  background: var(--color-bg-card);
+  border-color: var(--color-primary-lighter);
+  box-shadow: 0 0 0 3px var(--color-primary-bg);
+}
 .search-icon { color: var(--color-text-placeholder); font-size: 16px; }
-.search-placeholder { color: var(--color-text-placeholder); font-size: 13px; }
 .search-input {
   border: none; outline: none; background: transparent;
   font-size: 13px; color: var(--color-text-primary);
@@ -261,25 +332,56 @@ const handleLogout = () => {
 }
 .search-input::placeholder { color: var(--color-text-placeholder); }
 .search-kbd {
-  margin-left: auto;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 8px;
+  background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 11px;
   color: var(--color-text-placeholder);
   font-family: inherit;
+  white-space: nowrap;
 }
 
-.header-right { display: flex; align-items: center; gap: 8px; }
+.header-right { display: flex; align-items: center; gap: 6px; }
 .header-badge { display: flex; align-items: center; }
+
+/* Theme Toggle */
+.theme-toggle {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
+}
+.theme-toggle:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  border-color: var(--color-primary-lighter);
+}
+
+/* Theme icon transition */
+.theme-icon-enter-active { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.theme-icon-leave-active { transition: all 0.2s ease; }
+.theme-icon-enter-from { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+.theme-icon-leave-to { opacity: 0; transform: rotate(90deg) scale(0.5); }
+
+.header-icon-btn {
+  color: var(--color-text-secondary) !important;
+}
+.header-icon-btn:hover {
+  color: var(--color-primary) !important;
+  background: var(--color-primary-bg) !important;
+}
 
 .header-user {
   display: flex; align-items: center; gap: 10px;
   cursor: pointer; padding: 6px 10px;
   border-radius: 12px; transition: background var(--transition-fast);
 }
-.header-user:hover { background: rgba(241, 245, 249, 0.8); }
+.header-user:hover { background: var(--color-bg-hover); }
 
 .user-avatar {
   background: linear-gradient(135deg, #6366F1, #8B5CF6);
@@ -297,5 +399,32 @@ const handleLogout = () => {
   background: transparent;
   position: relative;
   z-index: 1;
+}
+
+/* ---- Back to Top ---- */
+.back-to-top {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  z-index: 999;
+}
+.back-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-primary);
+  border-color: var(--color-primary-lighter);
 }
 </style>
