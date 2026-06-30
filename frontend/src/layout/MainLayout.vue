@@ -63,6 +63,7 @@ const handleKeydown = (e) => {
     document.querySelector('.search-input')?.focus()
   }
 }
+const isMac = computed(() => typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent))
 
 const menus = computed(() => {
   const base = [
@@ -141,7 +142,7 @@ const handleLogout = () => {
               @focus="searchFocused = true"
               @blur="searchFocused = false"
             />
-            <kbd class="search-kbd">{{ navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl' }} K</kbd>
+            <kbd class="search-kbd">{{ isMac ? '⌘' : 'Ctrl' }} K</kbd>
           </div>
         </div>
         <div class="header-right">
